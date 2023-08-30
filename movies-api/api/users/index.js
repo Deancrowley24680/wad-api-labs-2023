@@ -18,6 +18,11 @@ router.post('/',asyncHandler( async (req, res, next) => {
       res.status(401).json({success: false, msg: 'Please pass username and password.'});
       return next();
     }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{5,}$/;
+    if (!passwordRegex.test(req.body.password)) {
+      res.status(401).json({success: false, msg: 'Please ensure password has minimum 5 characters, at least one letter and one number.'});
+      return next();
+    }
     if (req.query.action === 'register') {
       await User.create(req.body);
       res.status(201).json({code: 201, msg: 'Successful created new user.'});
@@ -50,12 +55,17 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-//Add a favourite. No Error Handling Yet. Can add duplicates too!
+//Add a favourite
 router.post('/:userName/favourites', asyncHandler(async (req, res) => {
     const newFavourite = req.body.id;
     const userName = req.params.userName;
     const movie = await movieModel.findByMovieDBId(newFavourite);
     const user = await User.findByUserName(userName);
+
+    if (user.favourites.includes(movie._id)) {
+        res.status(400).json({ code: 400, msg: 'The movie is already in favourites!'});
+        }
+
     await user.favourites.push(movie._id);
     await user.save(); 
     res.status(201).json(user); 
